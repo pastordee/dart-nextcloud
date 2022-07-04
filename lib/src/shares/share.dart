@@ -12,7 +12,7 @@ class Share {
     required this.permissions,
     required this.stime,
     required this.parent,
-    this.expiration,
+    // this.expiration,
     required this.token,
     required this.uidFileOwner,
     required this.note,
@@ -57,7 +57,7 @@ class Share {
   final String? parent;
 
   // ignore: public_member_api_docs
-  final DateTime? expiration;
+  // final DateTime? expiration;
 
   // ignore: public_member_api_docs
   final String token;
@@ -263,8 +263,8 @@ Share shareFromShareXml(xml.XmlElement element) {
   final displaynameOwner =
       element.findAllElements('displayname_owner').single.text;
   final parent = element.findAllElements('parent').single.text;
-  final expiration =
-      DateTime.parse(element.findAllElements('expiration').single.text);
+  // final expiration =
+  //     DateTime.parse(element.findAllElements('expiration').single.text);
   final token = element.findAllElements('token').single.text;
   final uidFileOwner = element.findAllElements('uid_file_owner').single.text;
   final note = element.findAllElements('note').single.text;
@@ -304,7 +304,7 @@ Share shareFromShareXml(xml.XmlElement element) {
     permissions: permissions,
     stime: stime,
     parent: parent,
-    expiration: expiration,
+    // expiration: expiration,
     token: token,
     uidFileOwner: uidFileOwner,
     note: note,
@@ -334,7 +334,7 @@ Share shareFromShareMap(Map element) {
   final stime = element['stime'];
   final uidOwner = element['uid_owner'];
   final displaynameOwner =element['displayname_owner'];
-  final parent = element['parent'];
+  final parent = element['parent'] ?? '';
   final expiration = DateTime.parse(element['expiration'] as String); // ?? DateTime.now().toIso8601String());
   final token = element['token'];
   final uidFileOwner = element['uid_file_owner'];
@@ -368,7 +368,7 @@ Share shareFromShareMap(Map element) {
     permissions: permissions,
     stime: stime as int,
     parent: parent as String,
-    expiration: expiration,
+    // expiration: expiration,
     token: token as String,
     uidFileOwner: uidFileOwner as String,
     note: note as String,
