@@ -1,6 +1,7 @@
+import 'dart:convert';
+
 import '../../nextcloud.dart';
 import '../network.dart';
-import 'dart:convert';
 
 /// SharesClient class
 class SharesClient {

@@ -1,5 +1,6 @@
-import 'package:xml/xml.dart' as xml;
 import 'dart:convert';
+
+import 'package:xml/xml.dart' as xml;
 
 /// Share class
 class Share {
@@ -31,8 +32,7 @@ class Share {
     required this.shareWithDisplayName,
     required this.mailSend,
     required this.hideDownload,
-    this.password,
-    required this.url,
+    required this.url, this.password,
   });
 
   /// The share id

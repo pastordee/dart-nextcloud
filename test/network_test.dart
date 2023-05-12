@@ -19,7 +19,7 @@ void main() {
   // ignore: dead_code
   group('Network', () {
     final httpClientMock = HttpClientMock();
-    final httpRequest = Request('GET', Uri.https('test', ''));
+    final httpRequest = Request('GET', Uri.https('test'));
     const authString = 'authString';
     const userAgent = 'dart-nextcloud';
 

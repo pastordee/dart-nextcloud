@@ -126,9 +126,9 @@ class WebDavClient {
     if (path.startsWith('/')) {
       dirs[0] = '/${dirs[0]}';
     }
-    var folders = "";
+    var folders = '';
     for (final dir in dirs) {
-      folders += '$dir';
+      folders += dir;
       print(folders);
       await mkdir(folders);
       folders += '/';
