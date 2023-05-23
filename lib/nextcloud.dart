@@ -20,7 +20,6 @@ export 'src/talk/talk.dart';
 export 'src/user/client.dart';
 export 'src/user/userdata.dart';
 export 'src/users/client.dart';
-export 'src/users/client.dart';
 export 'src/users/metadata.dart';
 export 'src/webdav/client.dart';
 export 'src/webdav/file.dart';
