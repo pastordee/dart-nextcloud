@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:nextcloud/src/webdav/client.dart';
 
 import 'http_client/http_client.dart';
 
@@ -170,7 +171,7 @@ class Network {
     String url,
     List<int> expectedCodes, {
     Uint8List? data,
-    Map<String, String>? headers,
+    Map<String, String>? headers, ProgressCallback? onUploadProgress,
   }) async =>
       http.Response.fromStream(
         await download(
