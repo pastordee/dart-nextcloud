@@ -81,6 +81,7 @@ print('Upload progress: --%');
           saveVideo,
           permissions: Permissions([Permission.read, Permission.update]),
         );
+        print('${shareVideo.url}');
 
        
       });
