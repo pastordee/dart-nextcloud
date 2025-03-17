@@ -7,6 +7,8 @@ import 'package:xml/xml.dart';
 import '../../nextcloud.dart';
 import '../network.dart';
 
+typedef ProgressCallback = void Function(int sentBytes, int totalBytes);
+
 /// WebDavClient class
 class WebDavClient {
   // ignore: public_member_api_docs
@@ -65,14 +67,55 @@ class WebDavClient {
     return path.replaceFirst('/files/$_username/', '');
   }
 
+  // Future<http.Response> _send(
+  //   String method,
+  //   String url,
+  //   List<int> expectedCodes, {
+  //   Uint8List? data,
+  //   Map<String, String>? headers,
+  // }) {
+  //   headers = headers ?? {};
+  //   headers[HttpHeaders.contentTypeHeader] = ContentType.xml.value;
+  //   return _network.send(
+  //     method,
+  //     url,
+  //     expectedCodes,
+  //     data: data,
+  //     headers: headers,
+  //   );
+  // }
+
   Future<http.Response> _send(
-    String method,
-    String url,
-    List<int> expectedCodes, {
-    Uint8List? data,
-    Map<String, String>? headers,
-  }) {
-    headers = headers ?? {};
+  String method,
+  String url,
+  List<int> expectedCodes, {
+  Uint8List? data,
+  Map<String, String>? headers,
+  ProgressCallback? onProgress,
+}) async {
+print('Upload progress: %');
+  final request = http.Request(method, Uri.parse(url));
+ 
+  
+  if (onProgress != null && data != null) {
+    var sentBytes = 0;
+    final totalBytes = data.length;
+    final streamedData = Stream.fromIterable(data.map((byte) {
+      sentBytes++;
+      if (sentBytes % 1024 == 0) { // Update every KB
+        onProgress(sentBytes, totalBytes);
+      }
+      return [byte];
+    }));
+    
+    request.bodyBytes = await streamedData.expand((e) => e).toList();
+  } else {
+    request.bodyBytes = data ?? Uint8List(0);
+  }
+
+  print('Upload progress: ${request.url}%');
+  
+  headers = headers ?? {};
     headers[HttpHeaders.contentTypeHeader] = ContentType.xml.value;
     return _network.send(
       method,
@@ -81,7 +124,7 @@ class WebDavClient {
       data: data,
       headers: headers,
     );
-  }
+}
 
   /// Registers a custom namespace for properties.
   ///
@@ -139,12 +182,30 @@ class WebDavClient {
       );
 
   /// upload a new file with [localData] as content to [remotePath]
-  Future upload(Uint8List localData, String remotePath) async => _send(
-        'PUT',
-        await _getUrl(remotePath),
-        [200, 201, 204],
-        data: localData,
-      );
+  // Future upload(Uint8List localData, String remotePath) async => _send(
+  //       'PUT',
+  //       await _getUrl(remotePath),
+  //       [200, 201, 204],
+  //       data: localData,
+  //     );
+
+  Future upload(
+  Uint8List localData, 
+  String remotePath, {
+  ProgressCallback? onProgress,
+}) async {
+  final url = await _getUrl(remotePath);
+  final headers = {HttpHeaders.contentTypeHeader: ContentType.xml.value};
+  
+  return _network.send(
+    'PUT',
+    url, 
+    [200, 201, 204],
+    data: localData,
+    headers: headers,
+    onProgress: onProgress,
+  );
+}
 
   /// download [remotePath] and store the response file contents to String
   Future<Uint8List> download(String remotePath) async => (await _send(

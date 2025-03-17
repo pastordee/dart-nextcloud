@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:nextcloud/nextcloud.dart';
 
 import 'http_client/http_client.dart';
 
@@ -161,21 +163,138 @@ class Network {
 
   /// send the request with given [method] and [url]
   Future<http.Response> send(
-    String method,
-    String url,
-    List<int> expectedCodes, {
-    Uint8List? data,
-    Map<String, String>? headers,
-  }) async =>
-      http.Response.fromStream(
-        await download(
-          method,
+  String method,
+  String url,
+  List<int> expectedCodes, {
+  Uint8List? data,
+  Map<String, String>? headers,
+  ProgressCallback? onProgress,
+}) async {
+  // ...existing code...
+
+
+ 
+      final request = http.Request(method, Uri.parse(url));
+      if (onProgress != null && data != null) {
+        var sentBytes = 0;
+        final totalBytes = data.length;
+        final streamedData = Stream.fromIterable(data.map((byte) {
+          sentBytes++;
+          if (sentBytes % 1024 == 0) { // Update every KB
+            onProgress(sentBytes, totalBytes);
+          }
+          return [byte];
+        }));
+        
+        request.bodyBytes = await streamedData.expand((e) => e).toList();
+      } else {
+        request.bodyBytes = data ?? Uint8List(0);
+      };
+      request.headers.addAll(headers ?? {});
+      final response = await _client.send(request);
+      if (!expectedCodes.contains(response.statusCode)) {
+        final r = await http.Response.fromStream(response);
+        throw RequestException(
+          r.body,
+          r.statusCode,
           url,
-          expectedCodes,
-          data: data,
-          headers: headers,
-        ),
-      );
+          method,
+        );
+      }
+      return http.Response.fromStream(response);
+   
+    // // If no response is returned, throw an exception
+    // throw Exception('The send method did not return a response or handle all cases.');
+}
+  // Future<http.Response> send(
+  //   String method,
+  //   String url,
+  //   List<int> expectedCodes, {
+  //   Uint8List? data,
+  //   Map<String, String>? headers,
+  //   void Function(int bytesSent, int totalBytes)? onProgress,
+  // }) async {
+  //   final request = http.Request(method, Uri.parse(url))
+  //     ..followRedirects = false
+  //     ..persistentConnection = true
+  //     ..headers.addAll(headers ?? {});
+
+  //   if (data != null) {
+  //     final totalBytes = data.length;
+  //     int bytesSent = 0;
+
+  //     request.bodyBytes = data;
+
+  //     if (onProgress != null) {
+  //       final stream = Stream.fromIterable([data]).transform(
+  //         StreamTransformer.fromHandlers(
+  //           handleData: (chunk, sink) {
+  //             bytesSent += chunk.length;
+  //             onProgress(bytesSent, totalBytes);
+  //             sink.add(chunk);
+  //           },
+  //         ),
+  //       );
+  //       // request.bodyStream = stream;
+  //     }
+  //   }
+
+  //   final response = await _client.send(request);
+
+  //   if (!expectedCodes.contains(response.statusCode)) {
+  //     final r = await http.Response.fromStream(response);
+
+  //     throw RequestException(
+  //       r.body,
+  //       r.statusCode,
+  //       url,
+  //       method,
+  //     );
+  //   }
+
+  //   return http.Response.fromStream(response);
+  // }
+  // Future<http.Response> send(
+  //   String method,
+  //   String url,
+  //   List<int> expectedCodes, {
+  //   Uint8List? data,
+  //   Map<String, String>? headers,
+  //   void Function(int bytesSent, int totalBytes)? onProgress,
+  // }) async {
+  //   final request = http.Request(method, Uri.parse(url))
+  //     ..followRedirects = false
+  //     ..persistentConnection = true
+  //     ..bodyBytes = data ?? Uint8List(0)
+  //     ..headers.addAll(headers ?? {});
+
+  //   if (onProgress != null && data != null) {
+  //     final totalBytes = data.length;
+  //     int bytesSent = 0;
+
+  //     request.finalize().listen(
+  //       (chunk) {
+  //         bytesSent += chunk.length;
+  //         onProgress(bytesSent, totalBytes);
+  //       },
+  //     );
+  //   }
+
+  //   final response = await _client.send(request);
+
+  //   if (!expectedCodes.contains(response.statusCode)) {
+  //     final r = await http.Response.fromStream(response);
+
+  //     throw RequestException(
+  //       r.body,
+  //       r.statusCode,
+  //       url,
+  //       method,
+  //     );
+  //   }
+
+  //   return http.Response.fromStream(response);
+  // }
 
   /// send the request with given [method] and [url]
   Future<http.StreamedResponse> download(
