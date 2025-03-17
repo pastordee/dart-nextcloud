@@ -72,10 +72,10 @@ print('Upload progress: --%');
       await client.webDav.upload(
         data,
         fileName,
-        // onProgress: (sent, total) {
-        //   final percentage = (sent / total * 100).round();
-        //   print('Upload progress: $percentage%');
-        // },
+        onProgress: (sent, total) {
+          final percentage = (sent / total * 100).round();
+          print('Upload progress: $percentage%');
+        },
       ).then((result) async {
         final shareVideo = await client.shares.shareWithPublicLink(
           saveVideo,
