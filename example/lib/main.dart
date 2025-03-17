@@ -64,16 +64,16 @@ print('Upload progress: --%');
     var timestamp = DateTime.now().millisecondsSinceEpoch;
       final data = File('/Users/prayercircle/Development/dart-nextcloud/example/assets/1024.png').readAsBytesSync();
 
-      var saveFolder = '/testNC';
-    var fileName = '1024tt.png.mp4';
+      var saveFolder = '';
+    var fileName = '1024tt.png';
     var saveVideo = '${'$saveFolder/$fileName'}';
       await client.webDav.upload(
         data,
         fileName,
-        onProgress: (sent, total) {
-          final percentage = (sent / total * 100).round();
-          print('Upload progress: $percentage%');
-        },
+        // onProgress: (sent, total) {
+        //   final percentage = (sent / total * 100).round();
+        //   print('Upload progress: $percentage%');
+        // },
       ).then((result) async {
         final shareVideo = await client.shares.shareWithPublicLink(
           saveVideo,
