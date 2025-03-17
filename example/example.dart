@@ -6,7 +6,7 @@ import 'package:nextcloud/nextcloud.dart';
 
 Future main() async {
   try {
-    final client = NextCloudClient.withCredentials(
+    final client = NextCloudClient.withCredentials( 
       Uri(host: 'cloud.example.com'),
       'myuser',
       'mypassword',

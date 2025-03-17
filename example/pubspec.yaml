@@ -1,21 +1,22 @@
-name: nextcloud
-version: 3.0.2
+name: nextc_loud
 description: A Nextcloud client for dart which can use several official Nextcloud APIs
-homepage: https://github.com/jld3103/dart-nextcloud
+
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
 
 dependencies:
+  flutter:
+    sdk: flutter
   http: ">=0.13.0 <1.1.0"
   intl: ">=0.17.0 <0.22.0"
-  xml: ^6.1.0 
+  xml: ^6.1.0
+  nextcloud:
+    path: ../
+  path_provider: ^2.0.9
 
 dev_dependencies:
   mockito: ">=5.0.0 <6.0.0"
   test: ">=1.16.0 <1.17.0"
-
-
 assets:
-    - example/
-   
+  - example/
