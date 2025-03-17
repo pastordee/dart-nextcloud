@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+
+import 'package:flutter/material.dart';
+import 'package:nextcloud/nextcloud.dart';
 
 void main() {
   runApp(const MyApp());
@@ -48,16 +53,46 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  void _incrementCounter() {
-    setState(() {
-       main();
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+
+   final client = NextCloudClient.withCredentials(
+      Uri(host: 'files.prayercircle.co.uk'),
+      'admin',
+      'roshuq-zabcuc-9tijNa',
+    );
+
+  void _incrementCounter() async {
+
+print('Upload progress: --%');
+    var timestamp = DateTime.now().millisecondsSinceEpoch;
+      final data = File('/Users/prayercircle/Development/dart-nextcloud/test/files/test.png').readAsBytesSync();
+
+      var saveFolder = '';
+    var fileName = '1024tt.png';
+    var saveVideo = '${'$saveFolder/$fileName'}';
+      await client.webDav.upload(
+        data,
+        fileName,
+        // onProgress: (sent, total) {
+        //   final percentage = (sent / total * 100).round();
+        //   print('Upload progress: $percentage%');
+        // },
+      ).then((result) async {
+        final shareVideo = await client.shares.shareWithPublicLink(
+          saveVideo,
+          permissions: Permissions([Permission.read, Permission.update]),
+        );
+
+       
+      });
+    // setState(() {
+    //    main();
+    //   // This call to setState tells the Flutter framework that something has
+    //   // changed in this State, which causes it to rerun the build method below
+    //   // so that the display can reflect the updated values. If we changed
+    //   // _counter without calling setState(), then the build method would not be
+    //   // called again, and so nothing would appear to happen.
+    //   _counter++;
+    // });
   }
 
   @override
