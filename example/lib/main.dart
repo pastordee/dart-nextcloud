@@ -61,19 +61,27 @@ class _MyHomePageState extends State<MyHomePage> {
   void _incrementCounter() async {
 
 print('Upload progress: --%');
-    // await client.webDav
-    //     .upload(File('example/test.png').readAsBytesSync(), '/test.png');
-    // Example usage
-      // final data = Uint8List.fromList([/* your data */]);
+    var timestamp = DateTime.now().millisecondsSinceEpoch;
       final data = File('/Users/prayercircle/Development/dart-nextcloud/example/assets/1024.png').readAsBytesSync();
+
+      var saveFolder = '/testNC';
+    var fileName = '1024tt.png.mp4';
+    var saveVideo = '${'$saveFolder/$fileName'}';
       await client.webDav.upload(
         data,
-        '/1024tt.png',
+        fileName,
         onProgress: (sent, total) {
           final percentage = (sent / total * 100).round();
           print('Upload progress: $percentage%');
         },
-      );
+      ).then((result) async {
+        final shareVideo = await client.shares.shareWithPublicLink(
+          saveVideo,
+          permissions: Permissions([Permission.read, Permission.update]),
+        );
+
+       
+      });
     // setState(() {
     //    main();
     //   // This call to setState tells the Flutter framework that something has

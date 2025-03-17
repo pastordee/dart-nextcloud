@@ -203,7 +203,7 @@ print('Upload progress: %');
     [200, 201, 204],
     data: localData,
     headers: headers,
-    onProgress: onProgress,
+    // onProgress: onProgress,
   );
 }
 
