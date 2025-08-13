@@ -1,5 +1,7 @@
 import 'package:xml/xml.dart' as xml;
 
+import '../xml_utils.dart';
+
 /// Share class
 class Share {
   // ignore: public_member_api_docs
@@ -221,25 +223,22 @@ class Permissions {
 /// Converts the shares xml to a list of share objects
 List<Share> sharesFromSharesXml(String xmlStr) {
   // Initialize a list to store the FileInfo Objects
-  final tree = [];
+  final tree = <Share>[];
 
   // parse the xml using the xml.XmlDocument.parse method
-  final xmlDocument = xml.XmlDocument.parse(xmlStr);
+  final xmlDocument = XmlUtils.safeParseXml(xmlStr, context: 'sharesFromSharesXml');
 
   // Iterate over the response to find all share elements and parse the information
   for (final response in xmlDocument.findAllElements('element')) {
     tree.add(shareFromShareXml(response));
   }
-  return tree.cast<Share>();
+  return tree;
 }
 
 /// Converts the shares xml to a list of share objects
 Share shareFromRequestResponseXml(String xmlStr) {
-  // parse the xml using the xml.XmlDocument.parse method
-  final xmlDocument = xml.XmlDocument.parse(xmlStr);
-
-  // Get the created share
-  final response = xmlDocument.findAllElements('data').single;
+  final xmlDocument = XmlUtils.safeParseXml(xmlStr, context: 'shareFromRequestResponseXml');
+  final response = XmlUtils.findSingleElement(xmlDocument, 'data', context: 'shareFromRequestResponseXml');
   return shareFromShareXml(response);
 }
 

@@ -7,9 +7,6 @@ import 'package:xml/xml.dart';
 import '../../nextcloud.dart';
 import '../network.dart';
 
-/// Callback function for tracking upload progress
-typedef ProgressCallback = void Function(int bytesSent, int totalBytes);
-
 /// WebDavClient class
 class WebDavClient {
   // ignore: public_member_api_docs
