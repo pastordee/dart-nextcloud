@@ -7,6 +7,9 @@ import 'package:xml/xml.dart';
 import '../../nextcloud.dart';
 import '../network.dart';
 
+/// Callback function for tracking upload progress
+typedef ProgressCallback = void Function(int bytesSent, int totalBytes);
+
 /// WebDavClient class
 class WebDavClient {
   // ignore: public_member_api_docs
@@ -71,6 +74,7 @@ class WebDavClient {
     List<int> expectedCodes, {
     Uint8List? data,
     Map<String, String>? headers,
+    ProgressCallback? onUploadProgress,
   }) {
     headers = headers ?? {};
     headers[HttpHeaders.contentTypeHeader] = ContentType.xml.value;
@@ -80,6 +84,7 @@ class WebDavClient {
       expectedCodes,
       data: data,
       headers: headers,
+      onUploadProgress: onUploadProgress,
     );
   }
 
@@ -139,11 +144,18 @@ class WebDavClient {
       );
 
   /// upload a new file with [localData] as content to [remotePath]
-  Future upload(Uint8List localData, String remotePath) async => _send(
+  ///
+  /// [onUploadProgress] is a callback that will be called during the upload with the number of bytes sent and the total number of bytes to send.
+  Future upload(
+    Uint8List localData,
+    String remotePath, {
+    ProgressCallback? onUploadProgress,
+  }) async => _send(
         'PUT',
         await _getUrl(remotePath),
         [200, 201, 204],
         data: localData,
+        onUploadProgress: onUploadProgress,
       );
 
   /// download [remotePath] and store the response file contents to String

@@ -5,6 +5,9 @@ import 'package:http/http.dart' as http;
 
 import 'http_client/http_client.dart';
 
+/// Callback function for tracking upload progress
+typedef ProgressCallback = void Function(int bytesSent, int totalBytes);
+
 // ignore: public_member_api_docs, avoid_classes_with_only_static_members
 class HttpHeaders {
   // ignore: public_member_api_docs
@@ -166,6 +169,7 @@ class Network {
     List<int> expectedCodes, {
     Uint8List? data,
     Map<String, String>? headers,
+    ProgressCallback? onUploadProgress,
   }) async =>
       http.Response.fromStream(
         await download(
@@ -174,6 +178,7 @@ class Network {
           expectedCodes,
           data: data,
           headers: headers,
+          onUploadProgress: onUploadProgress,
         ),
       );
 
@@ -184,14 +189,33 @@ class Network {
     List<int> expectedCodes, {
     Uint8List? data,
     Map<String, String>? headers,
+    ProgressCallback? onUploadProgress,
   }) async {
-    final response = await _client.send(
-      http.Request(method, Uri.parse(url))
-        ..followRedirects = false
-        ..persistentConnection = true
-        ..bodyBytes = data ?? Uint8List(0)
-        ..headers.addAll(headers ?? {}),
-    );
+    final request = http.Request(method, Uri.parse(url))
+      ..followRedirects = false
+      ..persistentConnection = true
+      ..headers.addAll(headers ?? {});
+
+    // Handle upload progress for non-empty data
+    if (data != null && data.isNotEmpty && onUploadProgress != null) {
+      final totalBytes = data.length;
+      var sentBytes = 0;
+      
+      // Create a stream that reports progress
+      final stream = Stream.fromIterable(data.map((byte) {
+        sentBytes++;
+        if (sentBytes % 1024 == 0 || sentBytes == totalBytes) {
+          onUploadProgress(sentBytes, totalBytes);
+        }
+        return [byte];
+      })).expand((chunk) => chunk);
+      
+      request.bodyBytes = await stream.toList().then(Uint8List.fromList);
+    } else {
+      request.bodyBytes = data ?? Uint8List(0);
+    }
+
+    final response = await _client.send(request);
 
     if (!expectedCodes.contains(response.statusCode)) {
       final r = await http.Response.fromStream(response);
