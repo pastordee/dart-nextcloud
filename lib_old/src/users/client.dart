@@ -4,21 +4,22 @@ import '../../nextcloud.dart';
 import '../network.dart';
 
 // ignore: public_member_api_docs
-class UserClient {
+class UsersClient {
   // ignore: public_member_api_docs
-  UserClient(
+  UsersClient(
     String baseUrl,
     this._network,
-  ) : _baseUrl = '$baseUrl/ocs/v1.php/cloud/user';
+  ) : _baseUrl = '$baseUrl/ocs/v1.php/cloud/users';
 
   final String _baseUrl;
 
   final Network _network;
 
   /// Get the meta data of a user
-  Future<UserData> getUser() async {
-    final response = await _network.send('GET', '$_baseUrl?format=json', [200]);
-    return UserData.fromJson(
+  Future<MetaData> getMetaData(String username) async {
+    final url = '$_baseUrl/$username';
+    final response = await _network.send('GET', url, [200]);
+    return MetaData.fromJson(
       json.decode(response.body) as Map<String, dynamic>,
     );
   }

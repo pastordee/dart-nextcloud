@@ -11,9 +11,9 @@ class UserData {
   // ignore: public_member_api_docs
   factory UserData.fromJson(Map<String, dynamic> json) => UserData(
         json['ocs']['data']['id'] as String,
-        json['ocs']['data']['display-name'] as String? ?? '',
-        json['ocs']['data']['email'] as String? ?? '',
-        json['ocs']['data']['storageLocation'] as String? ?? '',
+        json['ocs']['data']['display-name'] as String,
+        json['ocs']['data']['email'] as String,
+        json['ocs']['data']['storageLocation'] as String,
       );
 
   // ignore: public_member_api_docs
