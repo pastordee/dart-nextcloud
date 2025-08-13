@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:xml/xml.dart' as xml;
 
 import '../xml_utils.dart';
@@ -220,24 +221,79 @@ class Permissions {
   String toString() => '${toInt()}: $_permissions';
 }
 
-/// Converts the shares xml to a list of share objects
-List<Share> sharesFromSharesXml(String xmlStr) {
-  // Initialize a list to store the FileInfo Objects
-  final tree = <Share>[];
+/// Converts the shares response (XML or JSON) to a list of share objects
+List<Share> sharesFromResponse(String responseStr) {
+  // Initialize a list to store the Share Objects
+  final shares = <Share>[];
 
-  // parse the xml using the xml.XmlDocument.parse method
-  final xmlDocument = XmlUtils.safeParseXml(xmlStr, context: 'sharesFromSharesXml');
+  responseStr = responseStr.trim();
+  
+  // Check if response is JSON (OCS API format)
+  if (responseStr.startsWith('{')) {
+    try {
+      final jsonResponse = jsonDecode(responseStr) as Map<String, dynamic>;
+      
+      // Validate OCS response structure
+      if (!jsonResponse.containsKey('ocs') || 
+          !jsonResponse['ocs'].containsKey('data')) {
+        throw Exception('Invalid OCS JSON response structure');
+      }
+      
+      final data = jsonResponse['ocs']['data'];
+      
+      // Handle both single share and array of shares
+      if (data is List) {
+        for (final shareData in data) {
+          shares.add(shareFromJsonData(shareData as Map<String, dynamic>));
+        }
+      } else if (data is Map<String, dynamic>) {
+        shares.add(shareFromJsonData(data));
+      }
+      
+      return shares;
+    } catch (e) {
+      print('JSON parsing error in sharesFromSharesXml: $e');
+      print('Raw JSON response: $responseStr');
+      rethrow;
+    }
+  }
+
+  // Fallback to XML parsing
+  final xmlDocument = XmlUtils.safeParseXml(responseStr, context: 'sharesFromSharesXml');
 
   // Iterate over the response to find all share elements and parse the information
   for (final response in xmlDocument.findAllElements('element')) {
-    tree.add(shareFromShareXml(response));
+    shares.add(shareFromShareXml(response));
   }
-  return tree;
+  return shares;
 }
 
-/// Converts the shares xml to a list of share objects
-Share shareFromRequestResponseXml(String xmlStr) {
-  final xmlDocument = XmlUtils.safeParseXml(xmlStr, context: 'shareFromRequestResponseXml');
+/// Converts the shares response (XML or JSON) to a share object
+Share shareFromResponse(String responseStr) {
+  responseStr = responseStr.trim();
+  
+  // Check if response is JSON (OCS API format)
+  if (responseStr.startsWith('{')) {
+    try {
+      final jsonResponse = jsonDecode(responseStr) as Map<String, dynamic>;
+      
+      // Validate OCS response structure
+      if (!jsonResponse.containsKey('ocs') || 
+          !jsonResponse['ocs'].containsKey('data')) {
+        throw Exception('Invalid OCS JSON response structure');
+      }
+      
+      final data = jsonResponse['ocs']['data'] as Map<String, dynamic>;
+      return shareFromJsonData(data);
+    } catch (e) {
+      print('JSON parsing error in shareFromRequestResponseXml: $e');
+      print('Raw JSON response: $responseStr');
+      rethrow;
+    }
+  }
+  
+  // Fallback to XML parsing
+  final xmlDocument = XmlUtils.safeParseXml(responseStr, context: 'shareFromRequestResponseXml');
   final response = XmlUtils.findSingleElement(xmlDocument, 'data', context: 'shareFromRequestResponseXml');
   return shareFromShareXml(response);
 }
@@ -283,6 +339,85 @@ Share shareFromShareXml(xml.XmlElement element) {
 
   final permissionsNumber =
       int.parse(element.findAllElements('permissions').single.text);
+  final permissions = Permissions.fromInt(permissionsNumber);
+
+  return Share(
+    id: id,
+    shareType: shareType,
+    uidOwner: uidOwner,
+    displaynameOwner: displaynameOwner,
+    permissions: permissions,
+    stime: stime,
+    parent: parent,
+    expiration: expiration,
+    token: token,
+    uidFileOwner: uidFileOwner,
+    note: note,
+    label: label,
+    displaynameFileOwner: displaynameFileOwner,
+    path: path,
+    itemType: itemType,
+    mimeType: mimeType,
+    storageId: storageId,
+    storage: storage,
+    itemSource: itemSource,
+    fileSource: fileSource,
+    fileParent: fileParent,
+    fileTarget: fileTarget,
+    shareWith: shareWith,
+    shareWithDisplayName: shareWithDisplayName,
+    mailSend: mailSend,
+    hideDownload: hideDownload,
+    password: password,
+    url: url,
+  );
+}
+
+/// Converts a share JSON data to a share object
+Share shareFromJsonData(Map<String, dynamic> data) {
+  final id = int.parse(data['id'].toString());
+  final shareType = int.parse(data['share_type'].toString());
+  final stime = int.parse(data['stime'].toString());
+  final uidOwner = data['uid_owner']?.toString() ?? '';
+  final displaynameOwner = data['displayname_owner']?.toString() ?? '';
+  final parent = data['parent']?.toString() ?? '';
+  
+  // Handle expiration - can be null or a date string
+  DateTime expiration;
+  if (data['expiration'] != null && data['expiration'].toString().isNotEmpty) {
+    try {
+      expiration = DateTime.parse(data['expiration'].toString());
+    } catch (e) {
+      // If parsing fails, use a far future date to indicate no expiration
+      expiration = DateTime(2099, 12, 31);
+    }
+  } else {
+    // If null, use a far future date to indicate no expiration
+    expiration = DateTime(2099, 12, 31);
+  }
+  
+  final token = data['token']?.toString() ?? '';
+  final uidFileOwner = data['uid_file_owner']?.toString() ?? '';
+  final note = data['note']?.toString() ?? '';
+  final label = data['label']?.toString() ?? '';
+  final displaynameFileOwner = data['displayname_file_owner']?.toString() ?? '';
+  final path = data['path']?.toString() ?? '';
+  final itemType = data['item_type']?.toString() ?? '';
+  final mimeType = data['mimetype']?.toString() ?? '';
+  final storageId = data['storage_id']?.toString() ?? '';
+  final storage = int.parse(data['storage']?.toString() ?? '0');
+  final itemSource = int.parse(data['item_source']?.toString() ?? '0');
+  final fileSource = int.parse(data['file_source']?.toString() ?? '0');
+  final fileParent = int.parse(data['file_parent']?.toString() ?? '0');
+  final fileTarget = data['file_target']?.toString() ?? '';
+  final shareWith = data['share_with']?.toString() ?? '';
+  final shareWithDisplayName = data['share_with_displayname']?.toString() ?? '';
+  final mailSend = int.parse(data['mail_send']?.toString() ?? '0');
+  final hideDownload = int.parse(data['hide_download']?.toString() ?? '0');
+  final password = data['password']?.toString() ?? '';
+  final url = data['url']?.toString() ?? '';
+
+  final permissionsNumber = int.parse(data['permissions']?.toString() ?? '0');
   final permissions = Permissions.fromInt(permissionsNumber);
 
   return Share(

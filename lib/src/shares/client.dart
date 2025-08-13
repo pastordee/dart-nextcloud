@@ -40,14 +40,14 @@ class SharesClient {
       url += '&path=$path';
     }
     final response = await _network.send('GET', url, [200]);
-    return sharesFromSharesXml(response.body);
+    return sharesFromResponse(response.body);
   }
 
   /// Get a share by [id]
   Future<Share> getShare(int id) async {
     final url = _getUrl('/shares/$id');
     final response = await _network.send('GET', url, [200]);
-    return sharesFromSharesXml(response.body).single;
+    return sharesFromResponse(response.body).single;
   }
 
   /// Get a share by [id]
@@ -60,21 +60,21 @@ class SharesClient {
   Future<Share> updateSharePermissions(int id, Permissions permissions) async {
     final url = _getUrl('/shares/$id?permissions=${permissions.toInt()}');
     final response = await _network.send('PUT', url, [200]);
-    return shareFromRequestResponseXml(response.body);
+    return shareFromResponse(response.body);
   }
 
   /// Updates the password of a share
   Future<Share> updateSharePassword(int id, String password) async {
     final url = _getUrl('/shares/$id?password=$password');
     final response = await _network.send('PUT', url, [200]);
-    return shareFromRequestResponseXml(response.body);
+    return shareFromResponse(response.body);
   }
 
   /// Updates the public upload option of a share
   Future<Share> updateSharePublicUpload(int id, bool publicUpload) async {
     final url = _getUrl('/shares/$id?publicUpload=$publicUpload');
     final response = await _network.send('PUT', url, [200]);
-    return shareFromRequestResponseXml(response.body);
+    return shareFromResponse(response.body);
   }
 
   /// Updates the expire date of a share
@@ -83,14 +83,14 @@ class SharesClient {
       '/shares/$id?expireDate=${expireDate.year}-${expireDate.month}-${expireDate.day}',
     );
     final response = await _network.send('PUT', url, [200]);
-    return shareFromRequestResponseXml(response.body);
+    return shareFromResponse(response.body);
   }
 
   /// Updates the note of a share
   Future<Share> updateShareNote(int id, String note) async {
     final url = _getUrl('/shares/$id?note=$note');
     final response = await _network.send('PUT', url, [200]);
-    return shareFromRequestResponseXml(response.body);
+    return shareFromResponse(response.body);
   }
 
   /// share a folder of file
@@ -136,7 +136,7 @@ class SharesClient {
       url += '&password=$password';
     }
     final response = await _network.send('POST', url, [200]);
-    return shareFromRequestResponseXml(response.body);
+    return shareFromResponse(response.body);
   }
 
   /// Shares a [path] (dir/file) with a [user]
