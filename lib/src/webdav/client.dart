@@ -125,11 +125,27 @@ class WebDavClient {
     if (dirs.isEmpty) {
       return;
     }
-    if (path.startsWith('/')) {
-      dirs[0] = '/${dirs[0]}';
-    }
+    
+    // Build cumulative path for each directory level
+    String currentPath = '';
     for (final dir in dirs) {
-      await mkdir(dir);
+      if (currentPath.isEmpty) {
+        currentPath = dir;
+      } else {
+        currentPath = '$currentPath/$dir';
+      }
+      
+      // Create directory if it doesn't exist
+      try {
+        await mkdir(currentPath);
+      } catch (e) {
+        // Ignore "already exists" errors (HTTP 405 or similar)
+        if (!e.toString().contains('405') && 
+            !e.toString().contains('already exists') &&
+            !e.toString().contains('Method Not Allowed')) {
+          rethrow;
+        }
+      }
     }
   }
 

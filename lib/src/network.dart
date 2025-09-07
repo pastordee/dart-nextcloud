@@ -138,8 +138,9 @@ class RequestException implements Exception {
     this.body,
     this.statusCode,
     this.url,
-    this.method,
-  );
+    this.method, {
+    this.retryAfter,
+  });
 
   // ignore: public_member_api_docs
   String body;
@@ -152,15 +153,110 @@ class RequestException implements Exception {
 
   // ignore: public_member_api_docs
   String method;
+
+  /// Number of seconds to wait before retrying (for 429 rate limit errors)
+  int? retryAfter;
+
+  /// Returns true if this is a rate limiting error (HTTP 429)
+  bool get isRateLimited => statusCode == 429;
+
+  /// Returns true if this is a temporary error that might be worth retrying
+  bool get isRetryable => statusCode == 429 || statusCode >= 500;
+
+  @override
+  String toString() {
+    final buffer = StringBuffer('RequestException: ');
+    
+    switch (statusCode) {
+      case 429:
+        buffer.write('Rate limited (too many requests)');
+        if (retryAfter != null) {
+          buffer.write(' - retry after ${retryAfter}s');
+        }
+        break;
+      case 401:
+        buffer.write('Unauthorized - check credentials');
+        break;
+      case 403:
+        buffer.write('Forbidden - insufficient permissions');
+        break;
+      case 404:
+        buffer.write('Not found');
+        break;
+      case 500:
+        buffer.write('Internal server error');
+        break;
+      case 502:
+        buffer.write('Bad gateway');
+        break;
+      case 503:
+        buffer.write('Service unavailable');
+        break;
+      default:
+        buffer.write('HTTP $statusCode');
+    }
+    
+    buffer.write(' ($method $url)');
+    
+    if (body.isNotEmpty && body.length < 200) {
+      buffer.write(' - $body');
+    }
+    
+    return buffer.toString();
+  }
 }
 
 /// Organizes the requests
 class Network {
   /// Create a network with the given client and base url
-  Network(this._client);
+  /// 
+  /// [maxRetries] - Maximum number of retry attempts for rate limited requests (default: 3)
+  /// [baseRetryDelay] - Base delay in milliseconds for exponential backoff (default: 1000)
+  Network(this._client, {this.maxRetries = 3, this.baseRetryDelay = 1000});
 
   /// The http client
   final http.Client _client;
+  
+  /// Maximum number of retry attempts for rate limited requests
+  final int maxRetries;
+  
+  /// Base delay in milliseconds for exponential backoff
+  final int baseRetryDelay;
+
+  /// Parse retry-after header value to seconds
+  static int? parseRetryAfter(String? retryAfterHeader) {
+    if (retryAfterHeader == null) return null;
+    
+    // Try to parse as seconds (integer)
+    final seconds = int.tryParse(retryAfterHeader);
+    if (seconds != null) return seconds;
+    
+    // Try to parse as HTTP date (RFC 1123 format)
+    try {
+      final date = DateTime.parse(retryAfterHeader);
+      final diff = date.difference(DateTime.now());
+      return diff.inSeconds > 0 ? diff.inSeconds : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Calculate delay for exponential backoff with jitter
+  int calculateRetryDelay(int attempt, int? retryAfter) {
+    if (retryAfter != null) {
+      // Respect server's retry-after header
+      return retryAfter * 1000; // Convert to milliseconds
+    }
+    
+    // Exponential backoff: baseDelay * (2^attempt) with some randomization
+    final exponentialDelay = baseRetryDelay * (1 << attempt);
+    
+    // Add jitter to prevent thundering herd (±25%)
+    final jitter = (exponentialDelay * 0.25).round();
+    final random = DateTime.now().millisecondsSinceEpoch % (jitter * 2);
+    
+    return exponentialDelay - jitter + random;
+  }
 
   /// send the request with given [method] and [url]
   Future<http.Response> send(
@@ -170,17 +266,34 @@ class Network {
     Uint8List? data,
     Map<String, String>? headers,
     ProgressCallback? onUploadProgress,
-  }) async =>
-      http.Response.fromStream(
-        await download(
-          method,
-          url,
-          expectedCodes,
-          data: data,
-          headers: headers,
-          onUploadProgress: onUploadProgress,
-        ),
-      );
+  }) async {
+    for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await http.Response.fromStream(
+          await download(
+            method,
+            url,
+            expectedCodes,
+            data: data,
+            headers: headers,
+            onUploadProgress: onUploadProgress,
+          ),
+        );
+      } on RequestException catch (e) {
+        // If this is the last attempt or not a retryable error, rethrow
+        if (attempt >= maxRetries || !e.isRetryable) {
+          rethrow;
+        }
+        
+        // Calculate delay and wait before retrying
+        final delay = calculateRetryDelay(attempt, e.retryAfter);
+        await Future.delayed(Duration(milliseconds: delay));
+      }
+    }
+    
+    // This should never be reached, but just in case
+    throw StateError('Unexpected end of retry loop');
+  }
 
   /// send the request with given [method] and [url]
   Future<http.StreamedResponse> download(
@@ -220,11 +333,18 @@ class Network {
     if (!expectedCodes.contains(response.statusCode)) {
       final r = await http.Response.fromStream(response);
 
+      // Parse retry-after header for rate limiting
+      int? retryAfter;
+      if (response.statusCode == 429) {
+        retryAfter = parseRetryAfter(r.headers['retry-after']);
+      }
+
       throw RequestException(
         r.body,
         r.statusCode,
         url,
         method,
+        retryAfter: retryAfter,
       );
     }
     return response;
