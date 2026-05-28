@@ -4,9 +4,9 @@ import 'package:nextcloud/nextcloud.dart';
 void main() async {
   // Create a Nextcloud client
   final client = NextCloudClient.withCredentials(
-    Uri.parse('https://your-nextcloud.com'),
-    'username',
-    'password',
+    Uri.parse('https://files.prayercircle.co.uk'),
+    'admin',
+    'roshuq-zabcuc-9tijNa',
   );
 
   try {
